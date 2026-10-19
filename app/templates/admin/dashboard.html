@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block title %}Übersicht{% endblock %}
+{% block content %}
+<h1>Übersicht</h1>
+{% for text, ep in warnings %}
+<div class="alert alert--warn">{{ text }}{% if ep %} <a href="{{ url_for(ep) }}">Beheben</a>{% endif %}</div>
+{% endfor %}
+<div class="kpis">
+  <div class="kpi"><span class="kpi-value">{{ {'sammeln': 'Sponsorensuche', 'live': 'Live-Zählung', 'ergebnis': 'Ergebnis', 'abgesagt': 'Abgesagt'}[mode] }}</span><span class="kpi-label">Phase</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.anzahl }}</span><span class="kpi-label">bestätigte Sponsoren</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.unbestaetigt }}</span><span class="kpi-label">unbestätigt</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.pro_runde|euro }}</span><span class="kpi-label">pro Runde</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.runden }}</span><span class="kpi-label">Runden ({{ st.meter|km }})</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.summe|euro }}</span><span class="kpi-label">Spenden gesamt</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.bezahlt|euro }}</span><span class="kpi-label">bezahlt ({{ st.anzahl_bezahlt }})</span></div>
+  <div class="kpi"><span class="kpi-value">{{ st.offen|euro }}</span><span class="kpi-label">offen</span></div>
+</div>
+<section class="panel">
+  <h2>Neueste Anmeldungen</h2>
+  {% if recent %}
+  <ul class="mini-list">
+    {% for sp in recent %}
+    <li>{% include "admin/_thumb.html" %}
+      <a href="{{ url_for('admin.sponsor_edit', sid=sp.id) }}">{{ sp.name }}</a>
+      <span class="meta">{{ sp.betrag_cent|euro }} pro Runde, {{ sp.erstellt_am|dt }}</span>
+      <span class="pill pill--{{ sp.status }}">{{ 'bestätigt' if sp.status == 'bestaetigt' else 'unbestätigt' }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">Noch keine Anmeldungen. <a href="{{ url_for('admin.sponsor_new') }}">Ersten Sponsor anlegen</a></p>{% endif %}
+</section>
+{% endblock %}

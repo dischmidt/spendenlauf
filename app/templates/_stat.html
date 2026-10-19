@@ -1,0 +1,18 @@
+{% if mode == 'abgesagt' %}
+<div class="stat stat--cancel" role="status">
+  <p class="stat-label">{{ t('stat.cancelled', laeufer=laeufer) }}</p>
+  <div class="cancel-text">{{ s.absage_text|nl2p }}</div>
+</div>
+{% elif mode in ('ergebnis', 'live') %}
+<div class="stat stat--result">
+  <p class="stat-label">{% if mode == 'live' %}<span class="live-dot" aria-hidden="true"></span>{{ t('stat.live_label') }}{% else %}{{ t('stat.result_label') }}{% endif %}</p>
+  <p class="stat-big">{{ st.summe|euro }}</p>
+  <p class="stat-small">{{ st.runden }} {{ tn('unit.runde', st.runden) }}, {{ st.meter|km }}</p>
+</div>
+{% else %}
+<div class="stat">
+  <p class="stat-label">{{ t('stat.sammeln_label') }}</p>
+  <p class="stat-big">{{ st.pro_runde|euro }}</p>
+  <p class="stat-small">{{ t('stat.von') }} {{ st.anzahl }} {{ tn('unit.sponsor', st.anzahl) }}</p>
+</div>
+{% endif %}

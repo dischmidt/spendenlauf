@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ t('confirm.title') }}{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>{{ t('confirm.title') }}</h1>
+  <p>{{ t('confirm.hello', name=sponsor.name, laeufer=laeufer) }} <strong>{{ sponsor.betrag_cent|euro }}{% if hoechst_mode == 'footnote' %}<sup>*)</sup>{% endif %} {{ t('confirm.pro_runde') }}</strong>{% if hoechst_mode == 'show' %}, {{ t('confirm.hoechstens', betrag=sponsor.hoechst_cent|euro) }}{% endif %}.</p>
+  {% if hoechst_mode == 'footnote' %}<p class="help">{{ t('list.footnote_legend') }}</p>{% endif %}
+  {% if s.ablauf_text %}<div class="legal">{{ s.ablauf_text|nl2p }}</div>{% endif %}
+  <form method="post">
+    {{ csrf_field() }}
+    <button class="btn btn--primary" type="submit">{{ t('confirm.button') }}</button>
+  </form>
+</section>
+{% endblock %}

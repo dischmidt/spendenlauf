@@ -1,0 +1,13 @@
+{% if clock %}
+{% if clock.art == 'ergebnis' %}
+<div class="clock-box clock-box--ergebnis">
+  <p class="stat-label">{{ t('clock.ergebnis_label') }}</p>
+  <p class="clock">{{ st.runden }} {{ tn('unit.runde', st.runden) }} · {{ st.meter|km }}</p>
+</div>
+{% else %}
+<div class="clock-box clock-box--{{ clock.art }}" role="timer" aria-live="off">
+  <p class="stat-label">{{ t('clock.' ~ clock.art ~ '_label') }}</p>
+  <p><time class="clock{% if clock.rest_s == 0 %} clock--null{% endif %}" data-clock-ziel="{{ clock.ziel_ms }}" data-clock-jetzt="{{ clock.jetzt_ms }}" data-clock-tage="{{ t('clock.tage') }}">{{ clock.text }}</time></p>
+</div>
+{% endif %}
+{% endif %}

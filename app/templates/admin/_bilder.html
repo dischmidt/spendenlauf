@@ -1,0 +1,12 @@
+{# Bilder einer Vorlage oder Rundmail. Erwartet: namen (Liste), weg_feld, neu_feld, fid #}
+<div class="field mail-bilder">
+  <label for="{{ fid }}">Bilder <span class="opt">optional, erscheinen unter dem Text</span></label>
+  {% if namen %}
+  <ul class="mail-bilder-liste">{% for n in namen %}
+    <li><a href="{{ url_for('public.bild', name=n) }}" target="_blank"><img src="{{ url_for('public.bild', name=n) }}" alt="" height="80"></a>
+      <label class="inline"><input type="checkbox" name="{{ weg_feld }}" value="{{ n }}"> entfernen</label></li>
+  {% endfor %}</ul>
+  {% endif %}
+  <input id="{{ fid }}" type="file" name="{{ neu_feld }}" accept="image/*" multiple>
+  <p class="help">JPG, PNG oder WebP, werden auf höchstens 1200 px verkleinert und unter {{ config.BASE_URL }}/bild/… öffentlich abgelegt. Alle Uploads eines Speicherns zusammen höchstens 10 MB.</p>
+</div>

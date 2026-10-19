@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+{% block title %}Rundmail{% endblock %}
+{% block content %}
+<h1>Rundmail</h1>
+<form method="post" class="panel" enctype="multipart/form-data">
+  {{ csrf_field() }}
+  <div class="toolbar">
+    <button class="btn btn--ghost" name="action" value="vorlage_training">Vorlage: Training</button>
+    <button class="btn btn--ghost" name="action" value="vorlage_reminder">Vorlage: Erinnerung am Lauftag</button>
+    <button class="btn btn--ghost" name="action" value="vorlage_plaetze">Vorlage: Auf die Plätze</button>
+    <button class="btn btn--ghost" name="action" value="vorlage_start">Vorlage: Start</button>
+    <button class="btn btn--ghost" name="action" value="vorlage_vorlaeufig">Vorlage: Vorläufiges Ergebnis</button>
+    <button class="btn btn--ghost" name="action" value="vorlage_result">Vorlage: Ergebnis und Zahlung</button>
+  </div>
+  <div class="lang-tabs">
+    <div class="lang-tab-buttons">
+      <button type="button" data-lang-tab="de" class="is-active">Deutsch</button>
+      <button type="button" data-lang-tab="en">Englisch</button>
+    </div>
+    <div data-lang-panel="de">
+      <div class="field"><label for="rm-s">Betreff</label><input id="rm-s" name="betreff" value="{{ form.betreff }}"></div>
+      <div class="field"><label for="rm-t">Text</label><textarea id="rm-t" name="text" rows="16">{{ form.text }}</textarea></div>
+    </div>
+    <div data-lang-panel="en">
+      <div class="field"><label for="rm-s-en">Betreff (Englisch, optional)</label><input id="rm-s-en" name="betreff_en" value="{{ form.betreff_en }}"></div>
+      <div class="field"><label for="rm-t-en">Text (Englisch, optional)</label><textarea id="rm-t-en" name="text_en" rows="16">{{ form.text_en }}</textarea></div>
+      <p class="help">Empfänger mit Englisch als gespeicherter Sprache bekommen die englische Fassung, wenn sie ausgefüllt ist – sonst die deutsche.</p>
+    </div>
+  </div>
+  <input type="hidden" name="bilder" value="{{ bild_namen(form.bilder)|join(' ') }}">
+  {% with namen=bild_namen(form.bilder), weg_feld='bild_weg', neu_feld='bild_neu', fid='rm-bild' %}{% include "admin/_bilder.html" %}{% endwith %}
+  {% include "admin/_placeholders.html" %}
+  <div class="field-row">
+    <div class="field"><label for="rm-sp">Vorschau für</label>
+      <select id="rm-sp" name="sponsor_id">{% for r in rcpt %}<option value="{{ r.id }}" {% if form.sponsor_id == r.id|string %}selected{% endif %}>{{ r.name }} ({{ r.email }})</option>{% endfor %}</select></div>
+    <label class="inline"><input type="checkbox" name="unbestaetigte" value="1" {% if form.unbestaetigte %}checked{% endif %}> auch unbestätigte Sponsoren anschreiben</label>
+  </div>
+  <p class="help">{{ rcpt|length }} Empfänger. Sponsoren ohne E-Mail-Adresse werden übersprungen.</p>
+  {% if warn %}<div class="alert alert--warn">{{ warn }}</div>{% endif %}
+  <div class="toolbar">
+    <button class="btn" name="action" value="vorschau">Vorschau</button>
+    <button class="btn" name="action" value="test" {% if not admin_email %}disabled title="ADMIN_EMAIL fehlt in der .env"{% endif %}>Testmail an {{ admin_email or 'Admin' }}</button>
+  </div>
+  {% if preview %}
+  <div class="preview">
+    <p class="meta">An: {{ preview.to }} ({{ 'Englisch' if preview.lang == 'en' else 'Deutsch' }})</p>
+    <p><strong>{{ preview.betreff }}</strong></p>
+    {{ preview.text|nl2p }}
+    {% for url in preview.bilder %}<p><img src="{{ url }}" alt="" style="max-width:100%;height:auto"></p>{% endfor %}
+  </div>
+  {% endif %}
+  <fieldset class="send-box">
+    <legend>An alle senden</legend>
+    <div class="field"><label for="rm-n">Zur Bestätigung die Empfängerzahl eintragen ({{ rcpt|length }})</label><input id="rm-n" name="anzahl" inputmode="numeric" autocomplete="off"></div>
+    {% if warn %}<label class="inline"><input type="checkbox" name="trotzdem" value="1"> trotzdem senden</label>{% endif %}
+    <button class="btn btn--primary" name="action" value="senden">An {{ rcpt|length }} Empfänger senden</button>
+  </fieldset>
+</form>
+{% if history %}
+<section class="panel">
+  <h2>Bisherige Rundmails</h2>
+  <ul class="mini-list">{% for h in history %}<li><a href="{{ url_for('admin.rundmail_log', rid=h.id) }}">{{ h.betreff }}</a>
+    <span class="meta">{{ h.erstellt_am|dt }}, {{ h.ok }}/{{ h.anzahl }} gesendet</span><span class="pill">{{ h.status }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

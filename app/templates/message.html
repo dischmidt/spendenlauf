@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ marke }}{% endblock %}
+{% block content %}
+<section class="panel narrow message">
+{% if kind == 'check_mail' %}
+  <h1>{{ t('msg.check_mail_h1') }}</h1>
+  <p>{{ t('msg.check_mail_p') }}</p>
+  <p><a class="btn" href="{{ url_for('public.index') }}">{{ t('common.back_home') }}</a></p>
+{% elif kind == 'confirmed' %}
+  <h1>{{ t('msg.confirmed_h1', name=sponsor.name) }}</h1>
+  <p>{{ t('msg.confirmed_p') }}</p>
+  <p><a class="btn btn--primary" href="{{ url_for('public.index') }}#sponsoren">{{ t('common.to_sponsor_list') }}</a>
+  <button class="btn share" type="button" data-share data-copied="{{ t('share.copied') }}" data-url="{{ base_url }}/" data-title="{{ headline }}" hidden>{{ t('share.button') }}</button></p>
+{% elif kind == 'already_confirmed' %}
+  <h1>{{ t('msg.already_h1') }}</h1>
+  <p>{{ t('msg.already_p') }}</p>
+  <p><a class="btn" href="{{ url_for('public.index') }}#sponsoren">{{ t('common.to_sponsor_list') }}</a></p>
+{% elif kind in ('expired', 'invalid_link') %}
+  <h1>{% if kind == 'expired' %}{{ t('msg.expired_h1') }}{% else %}{{ t('msg.invalid_h1') }}{% endif %}</h1>
+  <p>{{ t('msg.resend_p') }}</p>
+  <form method="post" action="{{ url_for('public.resend') }}" class="inline-form">
+    {{ csrf_field() }}
+    <label for="r-email">{{ t('form.email_label') }}</label>
+    <input id="r-email" type="email" name="email" value="{{ sponsor.email if sponsor else '' }}" required>
+    <button class="btn btn--primary" type="submit">{{ t('msg.resend_button') }}</button>
+  </form>
+{% elif kind == 'too_many' %}
+  <h1>{{ t('msg.too_many_h1') }}</h1>
+  <p>{{ t('msg.too_many_p') }}</p>
+{% elif kind == 'too_large' %}
+  <h1>{{ t('msg.too_large_h1') }}</h1>
+  <p>{{ t('msg.too_large_p') }}</p>
+  <p><a class="btn" href="{{ url_for('public.index') }}#mitmachen">{{ t('msg.back_form') }}</a></p>
+{% else %}
+  <h1>{{ t('msg.error_h1') }}</h1>
+  <p>{{ detail or t('msg.error_default') }}</p>
+  <p><a class="btn" href="{{ url_for('public.index') }}">{{ t('common.to_home') }}</a></p>
+{% endif %}
+</section>
+{% endblock %}

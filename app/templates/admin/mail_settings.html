@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+{% block title %}Mailserver und Vorlagen{% endblock %}
+{% block content %}
+<h1>Mailserver und Vorlagen</h1>
+<form method="post" action="{{ url_for('admin.smtp_save') }}" data-ajax-smtp>
+  {{ csrf_field() }}
+  <section class="panel form-grid">
+    <h2>Mailserver</h2>
+    <div class="field"><label for="m-host">SMTP-Server</label><input id="m-host" name="smtp_host" value="{{ s.smtp_host }}" required></div>
+    <div class="field"><label for="m-port">Port</label><input id="m-port" type="number" min="1" max="65535" name="smtp_port" value="{{ s.smtp_port }}" required></div>
+    <div class="field"><label for="m-sec">Verschlüsselung</label>
+      <select id="m-sec" name="smtp_security">
+        <option value="starttls" {% if s.smtp_security == 'starttls' %}selected{% endif %}>STARTTLS (meist Port 587)</option>
+        <option value="ssl" {% if s.smtp_security == 'ssl' %}selected{% endif %}>SSL/TLS (meist Port 465)</option>
+        <option value="none" {% if s.smtp_security == 'none' %}selected{% endif %}>keine (nur intern)</option>
+      </select></div>
+    <div class="field"><label for="m-user">Benutzername</label><input id="m-user" name="smtp_user" value="{{ s.smtp_user }}" autocomplete="off"></div>
+    <div class="field"><label for="m-pw">Passwort</label><div class="pw-field"><input id="m-pw" type="password" name="smtp_password" autocomplete="new-password" data-saved-placeholder="gespeichert – leer lassen, um es zu behalten" placeholder="{{ 'gespeichert – leer lassen, um es zu behalten' if s.smtp_password else 'noch nicht gesetzt' }}"><button type="button" class="pw-toggle" data-toggle-password="m-pw" aria-label="Passwort anzeigen" aria-pressed="false" hidden><svg class="eye-open" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-closed" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.4 10.4 0 0 1 12 19C5.5 19 2 12 2 12a18.5 18.5 0 0 1 5.1-5.9M9.9 5.2A9.6 9.6 0 0 1 12 5c6.5 0 10 7 10 7a18.6 18.6 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M2 2l20 20"/></svg></button></div></div>
+    <div class="field"><label for="m-from">Absenderadresse</label><input id="m-from" type="email" name="mail_from" value="{{ s.mail_from }}"><p class="help">Sollte die Adresse des SMTP-Kontos sein (SPF/DKIM).</p></div>
+    <div class="field"><label for="m-name">Absendername</label><input id="m-name" name="mail_from_name" value="{{ s.mail_from_name }}"></div>
+    <div class="field"><label for="m-reply">Antwortadresse <span class="opt">optional</span></label><input id="m-reply" type="email" name="mail_reply_to" value="{{ s.mail_reply_to }}"></div>
+    <div class="field"><label for="m-rate">Pause zwischen Rundmails (Sekunden)</label><input id="m-rate" type="number" step="0.5" min="0" name="mail_rate_seconds" value="{{ s.mail_rate_seconds }}"></div>
+    <div class="field"><label for="m-test-to">Testmail an</label><input id="m-test-to" type="email" name="test_to" value="{{ admin_email or '' }}" placeholder="name@example.org"></div>
+    <div class="wide">
+      <p class="help">„Verbindung testen“ prüft nur Verbindung und Anmeldung, „Testmail senden“ verschickt zusätzlich eine Mail an die Adresse oben. Beide nehmen die Werte aus diesem Formular, auch ein eben eingetipptes Passwort. Probiert wird die eingestellte Variante, danach Port 587 mit STARTTLS und Port 465 mit SSL. Klappt es, werden die Werte samt funktionierender Variante gespeichert.</p>
+      <p class="toolbar">
+        <button class="btn btn--primary" type="submit" data-busy="Speichere …">Mailserver speichern</button>
+        <button class="btn" type="submit" formaction="{{ url_for('admin.smtp_test') }}" data-busy="Teste …">Verbindung testen</button>
+        <button class="btn" type="submit" formaction="{{ url_for('admin.smtp_testmail') }}" data-busy="Sende …">Testmail senden</button>
+      </p>
+      <div data-smtp-result aria-live="polite">
+        {% if smtp_log %}<ul class="log">{% for line in smtp_log %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
+  </section>
+</form>
+<form method="post" action="{{ url_for('admin.mail_settings') }}" enctype="multipart/form-data">
+  {{ csrf_field() }}
+  <section class="panel">
+    <h2>Vorlagen</h2>
+    {% include "admin/_placeholders.html" %}
+    <p class="help">Eine leer gespeicherte Vorlage wird auf den Standardtext zurückgesetzt.</p>
+    <div class="tpl-tab-buttons" role="tablist" aria-label="Vorlagen">
+      {% for key, label, hint in templates %}
+      <button type="button" role="tab" id="tab-{{ key }}" aria-controls="tpl-{{ key }}" data-tpl-tab="{{ key }}">{{ label }}</button>
+      {% endfor %}
+    </div>
+    {% for key, label, hint in templates %}
+    <fieldset class="tpl" id="tpl-{{ key }}" role="tabpanel" aria-labelledby="tab-{{ key }}" data-tpl-panel="{{ key }}">
+      <legend>{{ label }}</legend>
+      <p class="help">{{ hint }}</p>
+      <div class="lang-tabs">
+        <div class="lang-tab-buttons">
+          <button type="button" data-lang-tab="de" class="is-active">Deutsch</button>
+          <button type="button" data-lang-tab="en">Englisch</button>
+        </div>
+        <div data-lang-panel="de">
+          <div class="field"><label for="t-{{ key }}-s">Betreff</label><input id="t-{{ key }}-s" name="tpl_{{ key }}_subject" value="{{ s['tpl_' ~ key ~ '_subject'] }}"></div>
+          <div class="field"><label for="t-{{ key }}-b">Text</label><textarea id="t-{{ key }}-b" name="tpl_{{ key }}_body" rows="10">{{ s['tpl_' ~ key ~ '_body'] }}</textarea></div>
+        </div>
+        <div data-lang-panel="en">
+          <div class="field"><label for="t-{{ key }}-s-en">Betreff (Englisch)</label><input id="t-{{ key }}-s-en" name="tpl_{{ key }}_subject_en" value="{{ s['tpl_' ~ key ~ '_subject_en'] }}"></div>
+          <div class="field"><label for="t-{{ key }}-b-en">Text (Englisch)</label><textarea id="t-{{ key }}-b-en" name="tpl_{{ key }}_body_en" rows="10">{{ s['tpl_' ~ key ~ '_body_en'] }}</textarea></div>
+          <p class="help">Wird an Sponsoren mit Englisch als gespeicherter Sprache gesendet. Leer gespeichert wird auf den englischen Standardtext zurückgesetzt.</p>
+        </div>
+      </div>
+      {% with namen=bild_namen(s['tpl_' ~ key ~ '_bilder']), weg_feld='tpl_' ~ key ~ '_bild_weg', neu_feld='tpl_' ~ key ~ '_bild_neu', fid='t-' ~ key ~ '-bild' %}{% include "admin/_bilder.html" %}{% endwith %}
+      {% if key == 'start' %}
+      <input type="hidden" name="start_mail_formular" value="1">
+      <label class="inline"><input type="checkbox" name="start_mail_aktiv" value="1" {% if s.start_mail_aktiv == '1' %}checked{% endif %}> Beim Start des Laufs diese Mail an alle bestätigten Sponsoren senden</label>
+      <p class="help">Ausgelöst durch „Lauf starten“ oder das Einschalten der Live-Zählung (Lauf und Ergebnis). Versand und Protokoll laufen wie bei der Rundmail.</p>
+      {% elif key == 'vorlaeufig' %}
+      <label class="inline"><input type="checkbox" name="ende_mail_aktiv" value="1" {% if s.ende_mail_aktiv == '1' %}checked{% endif %}> Nach Ende des Laufs diese Mail an alle bestätigten Sponsoren senden</label>
+      <p class="help">Geht einmal pro Start raus: sofort beim Klick auf „Endzeit und vorläufige Rundenzahl speichern“ (Lauf und Ergebnis) oder spätestens eine Minute nach Ablauf der Laufuhr (Lauf und Ergebnis), solange die Phase noch „Live“ ist – mit der dann eingetragenen Rundenzahl. Wird die Phase vorher auf „Ergebnis“ gestellt, entfällt sie. Versand und Protokoll laufen wie bei der Rundmail.</p>
+      {% endif %}
+    </fieldset>
+    {% endfor %}
+  </section>
+  <p><button class="btn btn--primary" type="submit">Vorlagen speichern</button></p>
+</form>
+{% endblock %}

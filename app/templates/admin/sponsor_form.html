@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Sponsor bearbeiten' if sp else 'Sponsor anlegen' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Sponsor bearbeiten' if sp else 'Sponsor anlegen' }}</h1>
+{% if sp %}<p class="meta">Angelegt {{ sp.erstellt_am|dt }} über {{ 'Website' if sp.quelle == 'web' else 'Admin' }}{% if sp.bestaetigt_am %}, bestätigt {{ sp.bestaetigt_am|dt }} per {{ 'Link' if sp.bestaetigt_durch == 'link' else 'Admin' }}{% endif %}.</p>{% endif %}
+<form class="panel form-grid" method="post" enctype="multipart/form-data">
+  {{ csrf_field() }}
+  <div class="field {% if errors.name %}has-error{% endif %}"><label for="a-name">Name</label>
+    <input id="a-name" name="name" value="{{ form.name or '' }}" required>{% if errors.name %}<p class="error">{{ errors.name }}</p>{% endif %}</div>
+  <div class="field {% if errors.email %}has-error{% endif %}"><label for="a-email">E-Mail <span class="opt">optional</span></label>
+    <input id="a-email" name="email" type="email" value="{{ form.email or '' }}">{% if errors.email %}<p class="error">{{ errors.email }}</p>{% endif %}</div>
+  <div class="field"><label for="a-sprache">Sprache für Mails</label>
+    <select id="a-sprache" name="sprache">
+      <option value="de" {% if (form.sprache or 'de') != 'en' %}selected{% endif %}>Deutsch</option>
+      <option value="en" {% if form.sprache == 'en' %}selected{% endif %}>Englisch</option>
+    </select></div>
+  <div class="field {% if errors.betrag %}has-error{% endif %}"><label for="a-betrag">Betrag pro Runde (€)</label>
+    <input id="a-betrag" name="betrag" inputmode="decimal" value="{{ form.betrag or '' }}" required>{% if errors.betrag %}<p class="error">{{ errors.betrag }}</p>{% endif %}</div>
+  <div class="field {% if errors.hoechst %}has-error{% endif %}"><label for="a-hoechst">Höchstbetrag (€) <span class="opt">optional</span></label>
+    <input id="a-hoechst" name="hoechst" inputmode="decimal" value="{{ form.hoechst or '' }}">{% if errors.hoechst %}<p class="error">{{ errors.hoechst }}</p>{% endif %}</div>
+  <div class="field check wide"><input id="a-anonym" type="checkbox" name="anonym" value="1" {% if form.anonym %}checked{% endif %}><label for="a-anonym">Anonym (Name und Bild nicht öffentlich)</label></div>
+  <div class="field wide {% if errors.bild %}has-error{% endif %}">
+    <label for="a-bild">Bild</label>
+    {% if sp and sp.bild %}<div class="current-img">{% include "admin/_thumb.html" %}
+      <label class="inline"><input type="checkbox" name="bild_entfernen" value="1"> Bild entfernen</label></div>{% endif %}
+    <input id="a-bild" type="file" name="bild" accept="image/*">{% if errors.bild %}<p class="error">{{ errors.bild }}</p>{% endif %}
+  </div>
+  <div class="field check wide"><input id="a-quittung" type="checkbox" name="quittung" value="1" {% if form.quittung %}checked{% endif %}><label for="a-quittung">Spendenquittung gewünscht</label></div>
+  <div class="field"><label for="a-qname">Name für Quittung</label><input id="a-qname" name="quittung_name" value="{{ form.quittung_name or '' }}"></div>
+  <div class="field"><label for="a-strasse">Straße und Hausnummer</label><input id="a-strasse" name="strasse" value="{{ form.strasse or '' }}"></div>
+  <div class="field"><label for="a-ort">PLZ und Ort</label><input id="a-ort" name="plz_ort" value="{{ form.plz_ort or '' }}"></div>
+  <div class="field wide"><label for="a-notiz">Interne Notiz</label><textarea id="a-notiz" name="notiz" rows="2">{{ form.notiz or '' }}</textarea></div>
+  {% if not sp %}<div class="field check wide"><input id="a-welcome" type="checkbox" name="willkommen" value="1"><label for="a-welcome">Willkommensmail senden (wenn E-Mail vorhanden)</label></div>
+  <p class="help wide">Vom Admin angelegte Sponsoren gelten sofort als bestätigt. Auf der Sponsorenkarte bleibt ihre Unterschrift-Spalte leer.</p>{% endif %}
+  <div class="wide form-actions"><button class="btn btn--primary" type="submit">{{ 'Änderungen speichern' if sp else 'Sponsor anlegen' }}</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin.sponsors') }}">Abbrechen</a></div>
+</form>
+{% endblock %}

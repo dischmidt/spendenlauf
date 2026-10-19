@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero hero--{{ mode }}">
+  <div class="hero-visual">
+    <div class="track" aria-hidden="true">
+      <span class="lane-no">1</span><span class="lane-no">2</span><span class="lane-no">3</span><span class="lane-no">4</span>
+      <img class="runner" src="{{ url_for('public.laeufer_bild') }}" alt="">
+    </div>
+    {# Ergebnis groß unter dem Bild #}
+    {% if mode in ('ergebnis', 'live') %}<div data-part="stat">{% include "_stat.html" %}</div>{% endif %}
+  </div>
+  <div class="hero-text">
+    <p class="when">{{ s.lauf_datum|datum }}, {{ s.schule }}</p>
+    <h1>{{ headline }}</h1>
+    <div data-part="clock">{% include "_clock.html" %}</div>
+    {% if mode == 'sammeln' %}<p class="lead">{{ s.intro }}</p>{% endif %}
+    <p class="purpose">{{ s.zweck }}</p>
+    {% if mode in ('sammeln', 'abgesagt') %}<div data-part="stat">{% include "_stat.html" %}</div>{% endif %}
+    {% if mode != 'abgesagt' %}
+    <button class="btn share" type="button" data-share data-copied="{{ t('share.copied') }}" data-url="{{ base_url }}/" data-title="{{ headline }}" hidden>{{ t('share.button') }}</button>
+    {% endif %}
+  </div>
+</section>
+
+{% if s.ablauf_text %}
+<section class="panel narrow legal">
+  <h2>{{ t('ablauf.heading') }}</h2>
+  {{ s.ablauf_text|nl2p }}
+</section>
+{% endif %}
+
+<div class="layout {% if mode == 'sammeln' %}layout--two{% endif %}">
+  {% if mode == 'sammeln' %}
+  <section id="mitmachen" class="panel join">
+    <h2>{{ t('join.heading') }}</h2>
+    <p class="hint">{{ t('join.hint') }}</p>
+    {% if errors %}<div class="alert alert--warn" role="alert">{{ t('form.errors_alert') }}</div>{% endif %}
+    <form method="post" action="{{ url_for('public.register') }}" enctype="multipart/form-data" novalidate>
+      {{ csrf_field() }}
+      <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <div class="field {% if errors.name %}has-error{% endif %}">
+        <label for="f-name">{{ t('form.name_label') }}</label>
+        <input id="f-name" name="name" value="{{ form.name }}" maxlength="80" required autocomplete="name">
+        {% if errors.name %}<p class="error">{{ errors.name }}</p>{% endif %}
+      </div>
+      <div class="field {% if errors.email %}has-error{% endif %}">
+        <label for="f-email">{{ t('form.email_label') }}</label>
+        <input id="f-email" name="email" type="email" value="{{ form.email }}" required autocomplete="email">
+        <p class="help">{{ t('form.email_hint') }}</p>
+        {% if errors.email %}<p class="error">{{ errors.email }}</p>{% endif %}
+      </div>
+      <div class="field-row field-row--top">
+        <div class="field {% if errors.betrag %}has-error{% endif %}">
+          <label for="f-betrag">{{ t('form.betrag_label') }}</label>
+          <div class="money"><input id="f-betrag" name="betrag" inputmode="decimal" value="{{ form.betrag }}" placeholder="1,00" required><span>€</span></div>
+          <p class="help">{{ t('form.runde_hint', m=s.rundenlaenge_m) }}{% if s.mindestbeitrag_cent|int > 0 %} {{ t('form.mindest_hint', betrag=s.mindestbeitrag_cent|int|euro) }}{% endif %}</p>
+          {% if errors.betrag %}<p class="error">{{ errors.betrag }}</p>{% endif %}
+        </div>
+        <div class="field {% if errors.hoechst %}has-error{% endif %}">
+          <label for="f-hoechst">{{ t('form.hoechst_label') }} <span class="opt">optional</span></label>
+          <div class="money"><input id="f-hoechst" name="hoechst" inputmode="decimal" value="{{ form.hoechst }}" placeholder="{{ t('form.hoechst_placeholder') }}"><span>€</span></div>
+          <p class="help">{{ t('form.hoechst_hint') }}</p>
+          {% if errors.hoechst %}<p class="error">{{ errors.hoechst }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="field check">
+        <input id="f-anonym" type="checkbox" name="anonym" value="1" {% if form.anonym %}checked{% endif %}>
+        <label for="f-anonym">{{ t('form.anonym_label') }}</label>
+      </div>
+      <div class="field {% if errors.bild %}has-error{% endif %}" data-hide-when-anonymous>
+        <label for="f-bild">{{ t('form.bild_label') }} <span class="opt">optional</span></label>
+        <input id="f-bild" name="bild" type="file" accept="image/jpeg,image/png,image/webp">
+        <p class="help">{{ t('form.bild_hint') }}</p>
+        {% if errors.bild %}<p class="error">{{ errors.bild }}</p>{% endif %}
+      </div>
+
+      <div class="field check">
+        <input id="f-quittung" type="checkbox" name="quittung" value="1" {% if form.quittung %}checked{% endif %} data-toggles="quittung">
+        <label for="f-quittung">{{ t('form.quittung_label') }}</label>
+      </div>
+      <fieldset class="sub" id="quittung">
+        <legend>{{ t('form.quittung_legend') }}</legend>
+        <div class="field {% if errors.quittung_name %}has-error{% endif %}">
+          <label for="f-qname">Name</label>
+          <input id="f-qname" name="quittung_name" value="{{ form.quittung_name }}" autocomplete="name">
+          {% if errors.quittung_name %}<p class="error">{{ errors.quittung_name }}</p>{% endif %}
+        </div>
+        <div class="field {% if errors.strasse %}has-error{% endif %}">
+          <label for="f-strasse">{{ t('form.strasse_label') }}</label>
+          <input id="f-strasse" name="strasse" value="{{ form.strasse }}" autocomplete="street-address">
+          {% if errors.strasse %}<p class="error">{{ errors.strasse }}</p>{% endif %}
+        </div>
+        <div class="field {% if errors.plz_ort %}has-error{% endif %}">
+          <label for="f-ort">{{ t('form.plz_label') }}</label>
+          <input id="f-ort" name="plz_ort" value="{{ form.plz_ort }}">
+          {% if errors.plz_ort %}<p class="error">{{ errors.plz_ort }}</p>{% endif %}
+        </div>
+      </fieldset>
+
+      <div class="field check {% if errors.datenschutz %}has-error{% endif %}">
+        <input id="f-ds" type="checkbox" name="datenschutz" value="1" {% if form.datenschutz %}checked{% endif %} required>
+        <label for="f-ds">{{ t('form.datenschutz_label', link='<a href="' ~ url_for('public.datenschutz') ~ '" target="_blank">' ~ t('form.datenschutz_link') ~ '</a>')|safe }}</label>
+        {% if errors.datenschutz %}<p class="error">{{ errors.datenschutz }}</p>{% endif %}
+      </div>
+      <button class="btn btn--primary" type="submit">{{ t('form.submit') }}</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <section id="sponsoren" class="panel sponsors">
+    <h2>{% if mode == 'abgesagt' %}{{ t('list.heading_cancel') }}{% else %}{{ t('list.heading') }}{% endif %}</h2>
+    <div data-part="list">{% include "_list.html" %}</div>
+  </section>
+</div>
+{% if mode == 'live' or (mode == 'sammeln' and clock) %}<div data-mode="{{ mode }}" data-live="{{ url_for('public.live_fragment') }}{% if pager.seite and pager.seite > 1 %}?seite={{ pager.seite }}{% endif %}" hidden></div>{% endif %}
+{% endblock %}

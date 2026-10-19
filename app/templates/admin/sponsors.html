@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block title %}Sponsoren{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sponsoren</h1>
+  <a class="btn btn--primary" href="{{ url_for('admin.sponsor_new') }}">Sponsor anlegen</a>
+</div>
+<form class="filters" method="get">
+  <label>Status
+    <select name="status" data-autosubmit>
+      <option value="alle" {% if status == 'alle' %}selected{% endif %}>alle</option>
+      <option value="bestaetigt" {% if status == 'bestaetigt' %}selected{% endif %}>bestätigt</option>
+      <option value="unbestaetigt" {% if status == 'unbestaetigt' %}selected{% endif %}>unbestätigt</option>
+    </select></label>
+  <label>Zahlung
+    <select name="zahlung" data-autosubmit>
+      <option value="alle" {% if zahlung == 'alle' %}selected{% endif %}>alle</option>
+      <option value="offen" {% if zahlung == 'offen' %}selected{% endif %}>offen</option>
+      <option value="bezahlt" {% if zahlung == 'bezahlt' %}selected{% endif %}>bezahlt</option>
+    </select></label>
+  <noscript><button class="btn" type="submit">Filtern</button></noscript>
+  <span class="count">{{ rows|length }} Einträge</span>
+</form>
+{% if rows %}
+<div class="table-wrap">
+<table class="table sponsor-table">
+  <thead><tr><th class="col-thumb"><span class="sr">Bild</span></th><th>Name</th><th>Zusage</th><th>Spende</th><th>Status</th><th>Zahlung</th><th><span class="sr">Aktionen</span></th></tr></thead>
+  <tbody>
+  {% for row in rows %}{% set sp = row.sp %}
+  <tr>
+    <td class="col-thumb">{% include "admin/_thumb.html" %}</td>
+    <td data-label="Name"><a href="{{ url_for('admin.sponsor_edit', sid=sp.id) }}"><strong>{{ sp.name }}</strong></a>
+      {% if sp.anonym %}<span class="pill">anonym</span>{% endif %}{% if sp.quittung %}<span class="pill">Quittung</span>{% endif %}
+      <br><span class="meta">{{ sp.email or 'ohne E-Mail' }}</span></td>
+    <td data-label="Zusage">{{ sp.betrag_cent|euro }}/Runde{% if sp.hoechst_cent %}<br><span class="meta">max. {{ sp.hoechst_cent|euro }}</span>{% endif %}</td>
+    <td data-label="Spende">{{ row.erloes|euro }}</td>
+    <td data-label="Status"><span class="pill pill--{{ sp.status }}">{{ 'bestätigt' if sp.status == 'bestaetigt' else 'unbestätigt' }}</span>
+      {% if sp.bestaetigt_durch %}<br><span class="meta">per {{ 'Link' if sp.bestaetigt_durch == 'link' else 'Admin' }}</span>{% endif %}</td>
+    <td data-label="Zahlung">
+      {% if sp.bezahlt_am %}<span class="pill pill--paid">bezahlt</span><br><span class="meta">{{ zahlarten.get(sp.zahlart, '') }}, {{ sp.bezahlt_am|dt(false) }}</span>
+      {% else %}<span class="pill pill--open">offen</span>{% endif %}
+    </td>
+    <td class="actions-cell"><div class="actions">
+      {% if sp.status != 'bestaetigt' %}
+      <form method="post" action="{{ url_for('admin.sponsor_confirm', sid=sp.id) }}">{{ csrf_field() }}<button class="btn btn--sm">Bestätigen</button></form>
+      {% if sp.email %}<form method="post" action="{{ url_for('admin.sponsor_resend', sid=sp.id) }}">{{ csrf_field() }}<button class="btn btn--sm btn--ghost">Link erneut senden</button></form>{% endif %}
+      {% else %}
+      <form method="post" action="{{ url_for('admin.sponsor_payment', sid=sp.id) }}" class="pay-form">{{ csrf_field() }}
+        <select name="zahlart" aria-label="Zahlung von {{ sp.name }}">
+          <option value="offen" {% if not sp.bezahlt_am %}selected{% endif %}>offen</option>
+          {% for key, label in zahlarten.items() %}<option value="{{ key }}" {% if sp.zahlart == key %}selected{% endif %}>bezahlt: {{ label }}</option>{% endfor %}
+        </select>
+        <button class="btn btn--sm">Speichern</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin.sponsor_delete', sid=sp.id) }}" data-confirm="{{ sp.name }} wirklich löschen?">{{ csrf_field() }}<button class="btn btn--sm btn--danger">Löschen</button></form>
+    </div></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<p class="empty">Keine Sponsoren für diesen Filter.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% block title %}Karte und Export{% endblock %}
+{% block content %}
+<h1>Karte und Export</h1>
+<section class="panel">
+  <h2>Sponsorenkarte</h2>
+  <p>Die Karte der Schule, ausgefüllt mit allen {{ st.anzahl }} bestätigten Sponsoren. Bei Bestätigung per Link steht in der Unterschrift-Spalte „Opt-In per Email-Bestätigung“. Runden und Beträge erscheinen, sobald ein Ergebnis eingetragen ist.</p>
+  <p class="toolbar"><a class="btn btn--primary" href="{{ url_for('admin.card_download', fmt='docx') }}">Word-Datei herunterladen</a>
+    <a class="btn" href="{{ url_for('admin.card_download', fmt='pdf') }}">PDF herunterladen</a></p>
+</section>
+<section class="panel">
+  <h2>Sponsorenliste als CSV</h2>
+  <p>Alle Sponsoren mit Zusagen, Zahlungsstatus und Quittungsdaten, für Excel aufbereitet.</p>
+  <p><a class="btn" href="{{ url_for('admin.export_csv') }}">CSV herunterladen</a></p>
+</section>
+<section class="panel danger-zone">
+  <h2>Alle Daten löschen</h2>
+  <p>Löscht alle Sponsoren, Bilder, Rundmails und das Rundenprotokoll. Einstellungen und Vorlagen bleiben erhalten. Spätestens drei Monate nach dem Lauf.</p>
+  <form method="post" action="{{ url_for('admin.delete_all') }}" class="inline-form">{{ csrf_field() }}
+    <label for="del">Zum Bestätigen LÖSCHEN eintragen</label><input id="del" name="bestaetigung" autocomplete="off">
+    <button class="btn btn--danger">Alle Sponsordaten löschen</button></form>
+</section>
+{% endblock %}

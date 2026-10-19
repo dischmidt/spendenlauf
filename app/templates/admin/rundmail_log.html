@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block title %}Rundmail-Protokoll{% endblock %}
+{% block content %}
+<h1>Rundmail: {{ mail.betreff }}</h1>
+<p class="meta">Erstellt {{ mail.erstellt_am|dt }}. Status: <strong>{{ mail.status }}</strong>{% if mail.status in ('wartet', 'läuft') %} – <a href="{{ url_for('admin.rundmail_log', rid=mail.id) }}">aktualisieren</a>{% endif %}</p>
+<form method="post" action="{{ url_for('admin.rundmail_retry', rid=mail.id) }}">{{ csrf_field() }}<button class="btn">Fehlgeschlagene erneut senden</button></form>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Name</th><th>E-Mail</th><th>Status</th><th>Zeit</th><th>Fehler</th></tr></thead>
+  <tbody>{% for r in rows %}<tr>
+    <td data-label="Name">{{ r.name or 'gelöscht' }}</td><td data-label="E-Mail">{{ r.email }}</td>
+    <td data-label="Status"><span class="pill pill--{{ 'paid' if r.status == 'gesendet' else ('open' if r.status == 'fehler' else '') }}">{{ r.status }}</span></td>
+    <td data-label="Zeit">{{ r.zeit|dt }}</td><td data-label="Fehler">{{ r.fehler or '' }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

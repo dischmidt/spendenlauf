@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %}
+{% block title %}Einstellungen{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+<form method="post" enctype="multipart/form-data">
+  {{ csrf_field() }}
+  <section class="panel form-grid">
+    <h2 class="wide">Läufer und Lauf</h2>
+    <div class="wide lang-tabs">
+      <div class="lang-tab-buttons">
+        <button type="button" data-lang-tab="de" class="is-active">Deutsch</button>
+        <button type="button" data-lang-tab="en">Englisch</button>
+      </div>
+      <div data-lang-panel="de">
+        <div class="field"><label for="e-marke">Slogan (oben links in der Navigation)</label><input id="e-marke" name="marke" value="{{ s.marke }}"><p class="help">{laeufer} wird durch den Namen ersetzt.</p></div>
+      </div>
+      <div data-lang-panel="en">
+        <div class="field"><label for="e-marke-en">Slogan (Englisch, optional)</label><input id="e-marke-en" name="marke_en" value="{{ s.marke_en }}"><p class="help">Leer lassen → englische Besucher sehen den deutschen Slogan.</p></div>
+      </div>
+    </div>
+    <div class="field"><label for="e-name">Name auf der Website</label><input id="e-name" name="laeufer_name" value="{{ s.laeufer_name }}"></div>
+    <div class="field"><label for="e-karte">Name auf der Sponsorenkarte</label><input id="e-karte" name="karten_name" value="{{ s.karten_name }}"></div>
+    <div class="field"><label for="e-klasse">Klasse</label><input id="e-klasse" name="klasse" value="{{ s.klasse }}"></div>
+    <div class="field"><label for="e-schule">Schule</label><input id="e-schule" name="schule" value="{{ s.schule }}"></div>
+    <div class="field"><label for="e-datum">Datum des Laufs</label><input id="e-datum" type="date" name="lauf_datum" value="{{ s.lauf_datum }}"></div>
+    <div class="field"><label for="e-runde">Rundenlänge (Meter)</label><input id="e-runde" type="number" min="1" name="rundenlaenge_m" value="{{ s.rundenlaenge_m }}"></div>
+    <div class="field wide">
+      <label for="e-bild">Bild des Läufers</label>
+      <div class="runner-preview"><img src="{{ url_for('public.laeufer_bild') }}" alt="Aktuelles Läuferbild" height="140">
+        {% if s.laeufer_bild %}<label class="inline"><input type="checkbox" name="bild_zuruecksetzen" value="1"> Auf Standardbild zurücksetzen</label>{% endif %}</div>
+      <input id="e-bild" type="file" name="laeufer_bild" accept="image/*">
+      <p class="help">Am besten ein freigestelltes PNG mit transparentem Hintergrund.</p>
+    </div>
+  </section>
+  <section class="panel form-grid">
+    <h2 class="wide">Texte auf der Website</h2>
+    <div class="wide lang-tabs">
+      <div class="lang-tab-buttons">
+        <button type="button" data-lang-tab="de" class="is-active">Deutsch</button>
+        <button type="button" data-lang-tab="en">Englisch</button>
+      </div>
+      <div data-lang-panel="de">
+        <div class="field wide"><label for="e-head">Überschrift</label><input id="e-head" name="headline" value="{{ s.headline }}"><p class="help">{laeufer} wird durch den Namen ersetzt.</p></div>
+        <div class="field wide"><label for="e-intro">Einleitung (nur während der Sponsorensuche)</label><textarea id="e-intro" name="intro" rows="2">{{ s.intro }}</textarea></div>
+        <div class="field wide"><label for="e-zweck">Zweck</label><textarea id="e-zweck" name="zweck" rows="2">{{ s.zweck }}</textarea></div>
+        <div class="field wide"><label for="e-ablauf">Ablauf des Sponsorenlaufs</label><textarea id="e-ablauf" name="ablauf_text" rows="4">{{ s.ablauf_text }}</textarea><p class="help">Erscheint auf der Startseite und auf der Bestätigungsseite. Leer lassen, um den Abschnitt auszublenden.</p></div>
+        <div class="field wide"><label for="e-footer">Footer-Text (auf jeder Seite unten)</label><textarea id="e-footer" name="footer_text" rows="2">{{ s.footer_text }}</textarea><p class="help">{schule} und {lauf_datum} werden ersetzt.</p></div>
+      </div>
+      <div data-lang-panel="en">
+        <div class="field wide"><label for="e-head-en">Überschrift (Englisch, optional)</label><input id="e-head-en" name="headline_en" value="{{ s.headline_en }}"></div>
+        <div class="field wide"><label for="e-intro-en">Einleitung (Englisch, optional)</label><textarea id="e-intro-en" name="intro_en" rows="2">{{ s.intro_en }}</textarea></div>
+        <div class="field wide"><label for="e-zweck-en">Zweck (Englisch, optional)</label><textarea id="e-zweck-en" name="zweck_en" rows="2">{{ s.zweck_en }}</textarea></div>
+        <div class="field wide"><label for="e-ablauf-en">Ablauf des Sponsorenlaufs (Englisch, optional)</label><textarea id="e-ablauf-en" name="ablauf_text_en" rows="4">{{ s.ablauf_text_en }}</textarea><p class="help">Leer lassen → englische Besucher sehen den deutschen Text.</p></div>
+        <div class="field wide"><label for="e-footer-en">Footer-Text (Englisch, optional)</label><textarea id="e-footer-en" name="footer_text_en" rows="2">{{ s.footer_text_en }}</textarea></div>
+      </div>
+    </div>
+    <div class="field"><label for="e-max">Obergrenze pro Runde (€)</label><input id="e-max" name="max_betrag" inputmode="decimal" value="{{ s.max_betrag_cent|int|euro_input }}"><p class="help">Schutz vor Tippfehlern im Formular.</p></div>
+    <div class="field"><label for="e-mindest">Mindestbetrag pro Runde (€)</label><input id="e-mindest" name="mindestbeitrag" inputmode="decimal" value="{{ s.mindestbeitrag_cent|int|euro_input }}"><p class="help">0 € schaltet die Mindestspende ab.</p></div>
+    <div class="field"><label for="e-hfaktor">Schwelle für Höchstbetrag-Anzeige (Vielfaches des Rundenbetrags)</label>
+      <input id="e-hfaktor" name="hoechst_faktor" inputmode="decimal" value="{{ s.hoechst_faktor }}">
+      <p class="help">„Höchstens X €" wird bei einem Sponsor nur ausgeschrieben angezeigt, wenn der
+        Höchstbetrag kleiner ist als dieses Vielfache des Betrags pro Runde – Standard 10: Bei 2 €
+        pro Runde wird der Höchstbetrag nur genannt, wenn er unter 10 × 2 € = 20 € liegt. Darüber
+        erscheint nur eine Fußnote „*)" mit allgemeinem Hinweis, dass ein Höchstbetrag vereinbart
+        wurde, ohne die Zahl zu nennen.</p></div>
+  </section>
+  <section class="panel form-grid">
+    <h2 class="wide">Anmeldung</h2>
+    <div class="field check wide">
+      <input id="e-bsseite" type="checkbox" name="bestaetigungsseite" value="1" {% if s.bestaetigungsseite == '1' %}checked{% endif %}>
+      <label for="e-bsseite">Zusätzliche Seite mit Klick zur Bestätigung verlangen</label>
+      <p class="help">Standard: Der Link in der Bestätigungsmail bestätigt die Zusage direkt mit einem Klick. Wenn aktiviert, öffnet der Link stattdessen eine Seite, auf der nochmal extra bestätigt werden muss (schützt vor E-Mail-Link-Scannern, die den Link sonst versehentlich selbst auslösen).</p>
+    </div>
+  </section>
+  <section class="panel form-grid">
+    <h2 class="wide">Sponsorenliste</h2>
+    <div class="field"><label for="e-sortfeld">Sortieren nach</label>
+      <select id="e-sortfeld" name="sponsor_sort_feld">
+        <option value="datum" {% if s.sponsor_sort_feld == 'datum' %}selected{% endif %}>Datum (Anmeldung/Bestätigung)</option>
+        <option value="name" {% if s.sponsor_sort_feld == 'name' %}selected{% endif %}>Name</option>
+        <option value="betrag" {% if s.sponsor_sort_feld == 'betrag' %}selected{% endif %}>Betrag pro Runde</option>
+      </select></div>
+    <div class="field"><label for="e-sortrichtung">Richtung</label>
+      <select id="e-sortrichtung" name="sponsor_sort_richtung">
+        <option value="ab" {% if s.sponsor_sort_richtung != 'auf' %}selected{% endif %}>absteigend</option>
+        <option value="auf" {% if s.sponsor_sort_richtung == 'auf' %}selected{% endif %}>aufsteigend</option>
+      </select>
+      <p class="help">Standard: absteigend nach Datum – die zuletzt bestätigten Sponsoren erscheinen zuerst.</p></div>
+    <div class="field"><label for="e-proseite">Einträge pro Seite</label>
+      <select id="e-proseite" name="sponsor_pro_seite">
+        <option value="0" {% if s.sponsor_pro_seite == '0' %}selected{% endif %}>aus (alle auf einer Seite)</option>
+        <option value="5" {% if s.sponsor_pro_seite == '5' %}selected{% endif %}>5</option>
+        <option value="10" {% if s.sponsor_pro_seite == '10' %}selected{% endif %}>10</option>
+        <option value="25" {% if s.sponsor_pro_seite == '25' %}selected{% endif %}>25</option>
+        <option value="50" {% if s.sponsor_pro_seite == '50' %}selected{% endif %}>50</option>
+        <option value="100" {% if s.sponsor_pro_seite == '100' %}selected{% endif %}>100</option>
+      </select>
+      <p class="help">Gilt für die öffentliche Sponsorenliste auf der Startseite.</p></div>
+    <div class="field check wide">
+      <input id="e-zeitpunkt" type="checkbox" name="sponsor_zeige_zeitpunkt" value="1" {% if s.sponsor_zeige_zeitpunkt == '1' %}checked{% endif %}>
+      <label for="e-zeitpunkt">Zeitpunkt der Sponsorenerklärung anzeigen</label>
+      <p class="help">Zeigt bei jedem Sponsor, wie lange die Bestätigung her ist (z. B. „vor 3 Stunden").
+        In der Phase „Ergebnis" wird stattdessen das Datum (TT.MM.JJJJ) angezeigt. Standard: aus.</p>
+    </div>
+  </section>
+  <section class="panel form-grid">
+    <h2 class="wide">Zahlung</h2>
+    <div class="field"><label for="e-pp">PayPal-Empfänger (E-Mail)</label><input id="e-pp" type="email" name="paypal_empfaenger" value="{{ s.paypal_empfaenger }}"></div>
+    <div class="field"><label for="e-ppme">PayPal.me-Name <span class="opt">optional</span></label><input id="e-ppme" name="paypal_me" value="{{ s.paypal_me }}" placeholder="z. B. maxrennt">
+      <p class="help">Wenn gesetzt, führt {paypal_link} auf paypal.me/Name/Betrag. Sonst baut die App einen PayPal-Zahlungslink an die E-Mail-Adresse.</p></div>
+  </section>
+  <section class="panel form-grid">
+    <h2 class="wide">Rechtliches</h2>
+    <div class="wide lang-tabs">
+      <div class="lang-tab-buttons">
+        <button type="button" data-lang-tab="de" class="is-active">Deutsch</button>
+        <button type="button" data-lang-tab="en">Englisch</button>
+      </div>
+      <div data-lang-panel="de">
+        <div class="field wide"><label for="e-imp">Impressum</label><textarea id="e-imp" name="impressum" rows="10">{{ s.impressum }}</textarea></div>
+        <div class="field wide"><label for="e-ds">Datenschutzerklärung</label><textarea id="e-ds" name="datenschutz" rows="14">{{ s.datenschutz }}</textarea></div>
+      </div>
+      <div data-lang-panel="en">
+        <div class="field wide"><label for="e-imp-en">Impressum (Englisch, optional)</label><textarea id="e-imp-en" name="impressum_en" rows="10">{{ s.impressum_en }}</textarea></div>
+        <div class="field wide"><label for="e-ds-en">Datenschutzerklärung (Englisch, optional)</label><textarea id="e-ds-en" name="datenschutz_en" rows="14">{{ s.datenschutz_en }}</textarea></div>
+      </div>
+    </div>
+  </section>
+  <p><button class="btn btn--primary" type="submit">Einstellungen speichern</button></p>
+</form>
+{% endblock %}

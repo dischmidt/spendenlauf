@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+{% block title %}Lauf und Ergebnis{% endblock %}
+{% block content %}
+<h1>Lauf und Ergebnis</h1>
+<section class="panel">
+  <h2>Start und Uhr</h2>
+  {% if lauf_start %}
+  <p class="counter-value">Gestartet um {{ lauf_start|dt }} <span>{% if clock and clock.art == 'lauf' %}Restzeit auf der Website {{ '%02d:%02d'|format(clock.rest_s // 60, clock.rest_s % 60) }}{% endif %}</span></p>
+  {% if ende_mail_ms %}<p class="help" data-reload-at="{{ ende_mail_ms }}">Eine Minute nach Ablauf der Laufuhr geht automatisch die Mail „Vorläufiges Ergebnis“ an alle bestätigten Sponsoren – mit der dann eingetragenen Rundenzahl. Diese Seite lädt sich dazu von selbst neu.</p>{% endif %}
+  {% if s.ende_mail_gesendet_am %}<p class="help">Mail „Vorläufiges Ergebnis“ angestoßen um {{ s.ende_mail_gesendet_am|dt }} (Protokoll unter Rundmail).</p>{% endif %}
+  <form method="post" data-confirm="Start wirklich zurücksetzen? Die Laufuhr verschwindet, bis neu gestartet wird.">{{ csrf_field() }}<input type="hidden" name="action" value="start_reset"><button class="btn btn--ghost">Start zurücksetzen</button></form>
+  {% else %}
+  <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="start"><button class="btn btn--big btn--primary">Lauf starten</button></form>
+  <p class="help">Startet die Laufuhr ({{ dauer_min }}:{{ '%02d'|format(dauer_sek) }} rückwärts) und schaltet die Live-Zählung ein. Auch das Einschalten der Live-Zählung unter „Phase“ startet die Uhr.</p>
+  {% endif %}
+  {% if ende %}<p class="help">Lauf beendet um {{ ende|dt }} (eingetragene Endzeit).</p>{% endif %}
+  <form method="post" class="form-grid">{{ csrf_field() }}
+    <div class="field"><label for="u-start">Startzeit</label><input id="u-start" type="datetime-local" name="start_zeit" value="{{ s.start_zeit }}"></div>
+    <div class="field"><label for="u-min">Laufdauer</label>
+      <span class="inline"><input id="u-min" type="number" min="0" step="1" name="dauer_min" value="{{ dauer_min }}" style="width:6em" aria-label="Minuten"> min
+      <input type="number" min="0" max="59" step="1" name="dauer_sek" value="{{ dauer_sek }}" style="width:5em" aria-label="Sekunden"> s</span></div>
+    <label class="inline wide"><input type="checkbox" name="countdown_aktiv" value="1" {% if s.countdown_aktiv == '1' %}checked{% endif %}> Countdown bis zum Start auf der Startseite zeigen (nur in der Phase Sponsorensuche)</label>
+    <div class="field"><label for="u-ende">Endzeit</label><input id="u-ende" type="datetime-local" name="ende_zeit" value="{{ s.ende_zeit }}"></div>
+    <div class="field"><label for="u-runden">Vorläufige Rundenzahl</label><input id="u-runden" type="number" min="0" step="1" name="runden" value="{{ st.runden }}" style="width:6em"></div>
+    <p class="wide"><button class="btn" name="action" value="uhr">Startzeit speichern</button>
+      <button class="btn btn--primary" name="action" value="ende">Endzeit und vorläufige Rundenzahl speichern</button></p>
+    <p class="help wide">Endzeit leer = jetzt. {% if s.ende_mail_aktiv == '1' %}Beim Speichern der Endzeit geht die Mail „Vorläufiges Ergebnis“ sofort an alle bestätigten Sponsoren (einmal pro Lauf).{% else %}Die Mail „Vorläufiges Ergebnis“ ist ausgeschaltet – einschalten unter <a href="{{ url_for('admin.mail_settings') }}">Mail-Einstellungen</a>.{% endif %}</p>
+  </form>
+</section>
+<section class="panel counter">
+  <h2>Runden</h2>
+  <p class="counter-value">{{ st.runden }} <span>{{ 'Runde' if st.runden == 1 else 'Runden' }}, {{ st.meter|km }}, {{ st.summe|euro }}</span></p>
+  <div class="counter-buttons">
+    <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="minus"><button class="btn btn--big" aria-label="Eine Runde abziehen">−1</button></form>
+    <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="plus"><button class="btn btn--big btn--primary" aria-label="Eine Runde dazu">+1</button></form>
+  </div>
+  <form method="post" class="inline-form">{{ csrf_field() }}<input type="hidden" name="action" value="runden">
+    <label for="r-runden">Rundenzahl direkt eintragen</label>
+    <input id="r-runden" type="number" min="0" step="1" name="runden" value="{{ st.runden }}">
+    <button class="btn">Übernehmen</button></form>
+</section>
+<section class="panel">
+  <h2>Phase</h2>
+  <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="phase">
+    <fieldset class="radios">
+      <legend class="sr">Phase der Website</legend>
+      <label><input type="radio" name="phase" value="sammeln" {% if s.phase != 'ergebnis' %}checked{% endif %}> Sponsorensuche – Registrierung offen</label>
+      <label><input type="radio" name="phase" value="ergebnis" {% if s.phase == 'ergebnis' %}checked{% endif %}> Ergebnis – Summe und Erlöse anzeigen, Registrierung geschlossen</label>
+    </fieldset>
+    <label class="inline"><input type="checkbox" name="live_aktiv" value="1" {% if s.live_aktiv == '1' %}checked{% endif %}> Optional: Live-Zählung während des Laufs (Seite aktualisiert sich alle 15 Sekunden)</label>
+    <p><button class="btn btn--primary">Phase speichern</button></p>
+  </form>
+</section>
+<section class="panel">
+  <h2>Absage</h2>
+  <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="absage">
+    <label class="inline"><input type="checkbox" name="abgesagt" value="1" {% if s.abgesagt == '1' %}checked{% endif %}> Lauf ist abgesagt (überlagert jede Phase)</label>
+    <div class="lang-tabs">
+      <div class="lang-tab-buttons">
+        <button type="button" data-lang-tab="de" class="is-active">Deutsch</button>
+        <button type="button" data-lang-tab="en">Englisch</button>
+      </div>
+      <div data-lang-panel="de">
+        <div class="field"><label for="r-absage">Nachricht auf der Website</label>
+          <textarea id="r-absage" name="absage_text" rows="4" placeholder="z. B. Leider ist {{ laeufer }} krank und kann nicht mitlaufen.">{{ s.absage_text }}</textarea></div>
+      </div>
+      <div data-lang-panel="en">
+        <div class="field"><label for="r-absage-en">Nachricht auf der Website (Englisch, optional)</label>
+          <textarea id="r-absage-en" name="absage_text_en" rows="4">{{ s.absage_text_en }}</textarea></div>
+      </div>
+    </div>
+    <button class="btn">Absage speichern</button>
+  </form>
+</section>
+{% if log %}
+<section class="panel">
+  <h2>Protokoll der Rundenzahl</h2>
+  <ul class="log">{% for e in log %}<li>{{ e.zeit|dt }}: {{ e.alt }} → {{ e.neu }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}
