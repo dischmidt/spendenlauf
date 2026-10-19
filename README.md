@@ -1,121 +1,165 @@
 # Spendenlauf
 
-Website für den Sponsorenlauf eines Schulkinds. Sponsoren sagen einen Betrag pro Runde zu, bestätigen per E-Mail-Link und erscheinen danach in der Liste. Nach dem Lauf trägt der Admin die Runden ein, die Seite zeigt Ergebnis und Erlöse, und eine Rundmail schickt jedem Sponsor seinen Betrag mit PayPal-Link.
+🇩🇪 **[Deutsche Version → README.de.md](README.de.md)**
 
-Python 3.12, Flask, SQLite, python-dotenv. Keine externen Skripte, Schriften oder Tracker.
+A small website for **one runner** in a sponsored run, typically a school child in a school fundraising run. Family and friends pledge an amount per lap. The site collects the pledges, counts the laps on race day, and tells every sponsor what they owe.
 
-## Funktionen
+> **One runner per installation.** The app is built around exactly one runner. It has one name, one photo, one lap counter and one result. It cannot manage several runners, teams or a whole class. For several runners you would need a separate installation for each, or the [multi-runner extension](#roadmap-several-runners) described below.
 
-Öffentlich: Läuferbild auf einer Laufbahn, Sponsorenliste mit Miniaturbild (Foto, Logo, Initialen oder neutrales Symbol bei anonymen Sponsoren), sortiert nach Betrag pro Runde. Registrierung mit Name, E-Mail, Betrag pro Runde, optionalem Höchstbetrag, optionalem Bild, Anonym-Option und optionalem Wunsch nach Spendenquittung (mit Anschrift). Double-Opt-in: Der Link öffnet eine Seite mit Bestätigungsknopf, damit Link-Scanner von Mailprogrammen nichts auslösen. Desktop-Layout zweispaltig, auf dem Handy einspaltig mit Hamburger-Menü.
+What it does for the runner:
 
-Phasen: Sponsorensuche → Ergebnis (Summe, Runden und Strecke groß unter dem Bild, Erlös je Sponsor). Optional Live-Zählung mit automatischer Aktualisierung alle 15 Sekunden. „Abgesagt“ überlagert jede Phase und zeigt eine eigene Nachricht.
+- **Before the run:** a public page with the runner's photo, a countdown and the sponsor list. Sponsors sign up with a per-lap amount, an optional cap and an optional picture, and confirm by email.
+- **On race day:** "on your marks" and start emails, a race clock, and optional live lap counting with an auto-refreshing page. After the clock runs out, a provisional result email goes out.
+- **After the run:** the result (laps, distance, total). Each sponsor gets a payment email with their personal amount and a PayPal link. Payments can be tracked, and a filled-in sponsor card for the school can be exported as Word or PDF.
 
-Admin (`/admin`, Basic Auth im nginx):
+Python 3.12, Flask, SQLite, python-dotenv. No external scripts, fonts or trackers. The public site is available in German and English. The admin area is in German.
 
-- Übersicht mit Kennzahlen (Zusagen, Summe, bezahlt, offen) und Warnungen
-- Sponsoren: Liste mit Miniaturbild, Filter, Bearbeiten, Bestätigen ohne Link, Link erneut senden, Löschen, „bezahlt“ mit Zahlart (PayPal, bar, Überweisung)
-- Sponsor anlegen (auch ohne E-Mail, z. B. für Barzahler), optional mit Willkommensmail
-- Lauf und Ergebnis: Rundenzähler (+1/−1 oder direkt), Phase, optionale Live-Zählung, Absage mit Nachricht, Protokoll
-- Rundmail mit Platzhaltern, zwei Mustervorlagen (Erinnerung am Lauftag, Ergebnis und Zahlung), Vorschau je Sponsor, Testmail an `ADMIN_EMAIL`, Versand im Hintergrund mit Protokoll und „erneut senden“
-- Karte und Export: ausgefüllte Sponsorenkarte der Schule als Word und PDF („Opt-In per Email-Bestätigung“ in der Unterschrift-Spalte bei Link-Bestätigung), CSV-Export, „Alle Daten löschen“
-- Einstellungen: alle Angaben zum Läufer bzw. zur Läuferin (Name auf der Website und auf der Karte, Klasse, Schule, Datum, Rundenlänge, Bild), Seitentexte, Obergrenze pro Runde, PayPal-Empfänger und PayPal.me-Name, Impressum, Datenschutzerklärung
-- Mailserver und Vorlagen: SMTP-Server, Port, Verschlüsselung, Zugang, Absender, Antwortadresse, Versandpause, alle Mailvorlagen; Verbindungstest probiert 587/STARTTLS und 465/SSL und übernimmt die funktionierende Variante
+## Features
 
-## Lokal starten
+**Public site:** runner photo on a running track, and a sponsor list with thumbnails (photo, logo, initials, or a neutral symbol for anonymous sponsors). Sort order and page size are configurable. Sponsors sign up with name, email, amount per lap, an optional maximum, an optional picture, an "anonymous" option and an optional donation receipt request (with address). Double opt-in: by default the email link confirms directly, and an extra confirmation page with a button can be switched on. Two-column layout on desktop, single column with a hamburger menu on phones, language switch German/English.
+
+**Phases:** sponsor collection → result (total, laps and distance shown large under the photo, amount per sponsor). There is an optional countdown to the start and a race clock with live counting (refreshes every 15 seconds). "Cancelled" overrides every phase and shows its own message.
+
+**Admin** (`/admin`, protected by nginx basic auth):
+
+- Dashboard with key figures (pledges, total, paid, open) and warnings
+- Sponsors: list with thumbnails, filters, editing, confirming without the link, resending the link, deleting, and marking as paid with payment method (PayPal, cash, bank transfer)
+- Adding sponsors manually (also without email, e.g. for cash payers), optionally with a welcome email
+- Run and result:
+  - lap counter (+1/−1 or direct entry)
+  - start button with race clock and planned start time
+  - "save end time and provisional lap count" (sends the provisional result email right away)
+  - phase, live counting, cancellation with a message, and a log of lap count changes
+- Group email with placeholders and templates (training, race day reminder, on your marks, start, provisional result, result and payment), preview per sponsor, test email to `ADMIN_EMAIL`, and background sending with a log and "send again"
+- Sponsor card and export: the school's sponsor card, filled in, as Word and PDF; CSV export; "delete all data"
+- Settings: everything about the runner (name on the website and on the card, class, school, date, lap length, photo), page texts in German and English, limits per lap, PayPal recipient and PayPal.me name, imprint, privacy policy
+- Mail server and templates: SMTP server, port, encryption, login, sender, reply-to and sending delay, plus all mail templates with images, in German and English. The connection test tries 587/STARTTLS and 465/SSL and keeps the one that works.
+
+## Roadmap: several runners
+
+A natural next step is to make the app multi-tenant, so that one site serves many runners in the same sponsored run (for example a whole class or school):
+
+- **One admin** for the whole site: mail server, mail templates, imprint, privacy policy and payment settings are set up once.
+- **One area per runner** with its own public page (photo, texts, sponsor list, result), its own sponsors and pledges, lap counter, race clock, phase, group emails and sponsor card.
+- An overview page for the run that links to all runners and shows the combined total.
+
+This is not implemented yet. Today's data model (settings as key/value pairs, sponsors without a runner reference) would need a runner table and a runner ID on sponsors, lap logs and group emails.
+
+## Run locally
 
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env          # SECRET_KEY setzen, DATA_DIR=./data, SESSION_COOKIE_SECURE=0, BASE_URL=http://127.0.0.1:8000
-python wsgi.py                # http://127.0.0.1:8000  und  http://127.0.0.1:8000/admin
+cp .env.example .env          # set SECRET_KEY, DATA_DIR=./data, SESSION_COOKIE_SECURE=0, BASE_URL=http://127.0.0.1:8000
+python wsgi.py                # http://127.0.0.1:8000  and  http://127.0.0.1:8000/admin
 pytest
 ```
 
-Lokal ist `/admin` ungeschützt – auf dem Server schützt ihn nginx per Basic Auth.
+Locally, `/admin` is not protected. On the server, nginx protects it with basic auth.
 
-## Konfiguration
+## Configuration
 
-In der `.env` (geladen per python-dotenv) stehen nur die technischen Grundwerte: `SECRET_KEY`, `ADMIN_EMAIL`, `BASE_URL`, `DATA_DIR`, `SESSION_COOKIE_SECURE`, `SOFFICE_BIN` und optional `DATABASE_FILE` (Dateiname der Datenbank in `DATA_DIR`, Standard `spendenlauf.db`). Alles andere – inklusive Mailserver und SMTP-Passwort – wird im Admin-Bereich gepflegt und in der Datenbank gespeichert. Optionale `SMTP_*`-Werte in der `.env` gelten nur als Startwerte beim allerersten Start.
+The `.env` file (loaded by python-dotenv) only holds the technical basics:
+- `SECRET_KEY`
+- `ADMIN_EMAIL`
+- `BASE_URL`
+- `DATA_DIR`
+- `SESSION_COOKIE_SECURE`
+- `SOFFICE_BIN`
+- optionally `DATABASE_FILE` (database file name in `DATA_DIR`, default `spendenlauf.db`)
 
-## Installation auf Ubuntu 24.04 / 26.04 (ohne Docker)
+Everything else, including the mail server and the SMTP password, is managed in the admin area and stored in the database. Optional `SMTP_*` values in `.env` are only used as initial values on the very first start.
 
-Voraussetzungen: LibreOffice ist per apt installiert (für den PDF-Export der Sponsorenkarte), der DNS-Eintrag der Domain zeigt auf den Server, Port 80 und 443 sind offen.
+## Installation on Ubuntu 24.04 / 26.04 (without Docker)
+
+Prerequisites:
+- LibreOffice is installed via apt (for the PDF export of the sponsor card).
+- The domain's DNS record points to the server.
+- Ports 80 and 443 are open.
 
 ```bash
-git clone <repo-url> spendenlauf && cd spendenlauf
+git clone https://github.com/dischmidt/spendenlauf.git && cd spendenlauf
 sudo ./deploy/install.sh --name spendenlauf --domain spendenlauf.example.org \
   --admin-email admin@example.org --certbot-email admin@example.org
 ```
 
-`--name` bestimmt Dienst, Systembenutzer (Name ohne Bindestriche), Verzeichnisse und nginx-Site; in der Tabelle steht `<name>`.
+`--name` sets the service, the system user (the name without hyphens), the directories and the nginx site. The table below writes it as `<name>`. The script asks for the admin password (or takes `sudo ADMIN_PASSWORD='…' ./deploy/install.sh …`) and sets up:
 
-Das Skript fragt das Passwort für den Admin-Bereich ab (oder `sudo ADMIN_PASSWORD='…' ./deploy/install.sh …`) und richtet ein:
-
-| Was | Wo |
+| What | Where |
 | --- | --- |
-| Programm mit Python-venv | `/opt/<name>` (gehört root) |
-| Konfiguration (python-dotenv) | `/opt/<name>/.env`, Rechte 640, beim ersten Lauf mit zufälligem `SECRET_KEY` |
-| Datenbank, Bilder, Sicherungen | `/var/lib/<name>` (Systembenutzer = Name ohne Bindestriche) |
-| Dienst | `<name>.service`: gunicorn auf 127.0.0.1:8000 (`--port`), 1 Prozess, 8 Threads, gehärtet |
-| Sicherung | `<name>-backup.timer`: täglich 02:30 nach `/var/lib/<name>/backup`, 14 Tage |
-| Webserver | nginx-Site `<name>`, `client_max_body_size 10m`, Basic Auth für `/admin` (`/etc/nginx/<name>.htpasswd`) |
-| HTTPS | certbot mit nginx-Plugin, automatische Verlängerung über den certbot-Timer |
+| Program with Python venv | `/opt/<name>` (owned by root) |
+| Configuration (python-dotenv) | `/opt/<name>/.env`, mode 640, created on the first run with a random `SECRET_KEY` |
+| Database, images, backups | `/var/lib/<name>` (system user = name without hyphens) |
+| Service | `<name>.service`: gunicorn on 127.0.0.1:8000 (`--port`), 1 process, 8 threads, hardened |
+| Backup | `<name>-backup.timer`: daily at 02:30 into `/var/lib/<name>/backup`, keeps 14 days |
+| Web server | nginx site `<name>`, `client_max_body_size 10m`, basic auth for `/admin` (`/etc/nginx/<name>.htpasswd`) |
+| HTTPS | certbot with the nginx plugin, automatic renewal via the certbot timer |
 
-Optionen: `--name`, `--domain`, `--port` (wenn 8000 schon belegt ist), `--no-certbot` (eigenes Zertifikat), `--no-nginx` (nur App-Dienst). `./deploy/install.sh --help` zeigt alle.
+Options:
+- `--name`, `--domain`
+- `--port`, if 8000 is already taken
+- `--no-certbot`, if you use your own certificate
+- `--no-nginx`, to install only the app service
 
-**Update:** neue Version holen und `sudo ./deploy/install.sh` mit denselben Optionen (`--name`, `--domain`, `--port`) erneut ausführen. Code und Python-Pakete werden aktualisiert und der Dienst neu gestartet; `.env`, Daten, htpasswd und die von certbot ergänzte nginx-Site bleiben unverändert.
+`./deploy/install.sh --help` lists them all.
 
-**Nützliche Befehle:**
+**Update:** pull the new version and run `sudo ./deploy/install.sh` again with the same options (`--name`, `--domain`, `--port`). Code and Python packages are updated and the service is restarted. `.env`, data, htpasswd and the nginx site (as extended by certbot) stay untouched.
+
+**Useful commands:**
 
 ```bash
-journalctl -u spendenlauf -f                       # Log
-sudo systemctl restart spendenlauf                 # Neustart, z. B. nach Änderung der .env
-sudo htpasswd -B /etc/nginx/spendenlauf.htpasswd admin   # Admin-Passwort ändern
-sudo systemctl start spendenlauf-backup            # Sicherung sofort
+journalctl -u spendenlauf -f                              # log
+sudo systemctl restart spendenlauf                        # restart, e.g. after changing .env
+sudo htpasswd -B /etc/nginx/spendenlauf.htpasswd admin    # change the admin password
+sudo systemctl start spendenlauf-backup                   # back up now
 ```
 
-Hinweise:
+Notes:
 
-- Genau ein gunicorn-Prozess: SQLite, Ratenbegrenzung und Rundmail-Versand laufen darin. Bitte `--workers` nicht erhöhen.
-- Der Dienst läuft mit `ProtectSystem=strict` und darf nur nach `/var/lib/<name>` schreiben; LibreOffice arbeitet in einem privaten `/tmp`.
-- Das Admin- und das SMTP-Passwort sollten verschieden sein.
+- Run exactly one gunicorn process. SQLite, rate limiting and group email sending all run inside it, so please don't increase `--workers`.
+- The service runs with `ProtectSystem=strict` and may only write to `/var/lib/<name>`. LibreOffice works in a private `/tmp`.
+- Use different passwords for the admin area and for SMTP.
 
-## Checkliste vor dem Livegang
+## Checklist before going live
 
-1. Admin → Mailserver und Vorlagen: SMTP-Passwort eintragen, „Verbindung testen“ (Testmail an `ADMIN_EMAIL`).
-2. Admin → Einstellungen: Angaben zu Läufer, Schule und Lauf eintragen, Impressum und Datenschutzerklärung vervollständigen (Platzhalter in eckigen Klammern), PayPal-Empfänger und ggf. PayPal.me-Namen eintragen.
-3. Einmal selbst registrieren, Mail bestätigen, Eintrag wieder löschen.
-4. Den PayPal-Link aus einer Testmail einmal selbst öffnen. Ohne PayPal.me-Namen ist es ein gewöhnlicher PayPal-Zahlungslink an den eingetragenen PayPal-Empfänger; dafür fallen in der Regel Gebühren beim Empfänger an. Die Mustervorlage nennt deshalb zusätzlich „Freunde und Familie“ und Barzahlung.
+1. Admin → Mailserver und Vorlagen: enter the SMTP password and click "Verbindung testen" (sends a test email to `ADMIN_EMAIL`).
+2. Admin → Einstellungen:
+   - enter the runner, school and run details
+   - complete the imprint and privacy policy (placeholders are in square brackets)
+   - enter the PayPal recipient and, optionally, a PayPal.me name
+3. Sign up once yourself, confirm the email, then delete the entry.
+4. Open the PayPal link from a test email once. Without a PayPal.me name it is a regular PayPal payment link to the configured recipient, which usually costs the recipient fees. The template therefore also mentions "Friends and Family" and cash.
 
-## Am Lauftag und danach
+## On race day and afterwards
 
-1. Morgens Rundmail „Erinnerung am Lauftag“.
-2. Optional: Live-Zählung einschalten und am Streckenrand mit +1 zählen.
-3. Nach dem Lauf Runden eintragen, Phase „Ergebnis“ wählen.
-4. Rundmail „Ergebnis und Zahlung“ (Vorschau, Testmail, dann an alle).
-5. Zahlungseingänge als „bezahlt“ markieren; Filter „offen“ zum Nachfassen.
-6. Sponsorenkarte (Word oder PDF) mit dem Umschlag an die Klassenlehrerin.
-7. Spätestens drei Monate nach dem Lauf: Karte und Export → „Alle Daten löschen“.
+1. In the morning, send the group email "race day reminder".
+2. At the start, click "Lauf starten" (starts the race clock and sends the start email if it is enabled). Optionally count laps live with +1 at the track.
+3. After the run, enter the end time and the provisional lap count. The provisional result email goes out if it is enabled.
+4. Once the lap count is confirmed, choose the phase "Ergebnis" and send the group email "result and payment" (preview, test email, then to everyone).
+5. Mark incoming payments as paid. Use the "open" filter to follow up.
+6. Hand the sponsor card (Word or PDF) to the class teacher together with the envelope.
+7. No later than three months after the run: Karte und Export → "Alle Daten löschen".
 
-## Struktur
+## Structure
 
 ```
 app/
-  __init__.py     App-Factory, .env laden
-  db.py           SQLite-Schema und Verbindung
-  settings.py     Einstellungen mit Standardwerten und Mailvorlagen
-  logic.py        Phasen, Erlösberechnung (mit Höchstbetrag), Platzhalter
-  public.py       öffentliche Routen
-  admin.py        Admin-Routen
-  mailer.py       SMTP, Verbindungstest, Rundmail-Versand
-  card.py         Sponsorenkarte aus resources/sponsorenkarte.docx
-  templates/      Jinja-Templates (öffentlich und admin/)
-  static/         CSS, JS, Schriften (OFL), Standardbild
-deploy/install.sh Installation und Update auf Ubuntu
-deploy/systemd/   Dienst und Sicherungs-Timer
-deploy/nginx/     nginx-Site mit Basic Auth
-deploy/backup.py  Sicherung von Datenbank und Bildern
+  __init__.py     app factory, loads .env
+  db.py           SQLite schema and connection
+  settings.py     settings with defaults and mail templates
+  logic.py        phases, race clock, amount calculation (with cap), placeholders
+  i18n.py         German/English texts for the public site
+  public.py       public routes
+  admin.py        admin routes
+  mailer.py       SMTP, connection test, group email sending
+  card.py         sponsor card from resources/sponsorenkarte.docx
+  templates/      Jinja templates (public and admin/)
+  static/         CSS, JS, fonts (OFL), default image
+deploy/install.sh installation and update on Ubuntu
+deploy/systemd/   service and backup timer
+deploy/nginx/     nginx site with basic auth
+deploy/backup.py  backup of database and images
 tests/            pytest
 ```
 
-Lizenz: MIT (siehe `LICENSE`). Schriften: Bricolage Grotesque und Atkinson Hyperlegible, SIL Open Font License (Lizenztexte in `app/static/fonts`).
+License: MIT (see `LICENSE`). Fonts: Bricolage Grotesque and Atkinson Hyperlegible, SIL Open Font License (license texts in `app/static/fonts`).
