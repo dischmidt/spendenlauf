@@ -8,7 +8,7 @@
 # Optionen siehe --help. Das Admin-Passwort wird abgefragt oder per ADMIN_PASSWORD=... übergeben.
 set -euo pipefail
 
-NAME="spendenlauf"
+APP_NAME="spendenlauf"
 DOMAIN="spendenlauf.example.org"
 ADMIN_EMAIL=""
 CERTBOT_EMAIL=""
@@ -19,7 +19,7 @@ WITH_CERTBOT=1
 usage() {
   cat <<EOF
 Aufruf: sudo $0 [Optionen]
-  --name NAME            Name für Dienst, Systembenutzer, /opt/NAME, /var/lib/NAME, nginx-Site (Standard: $NAME)
+  --name NAME            Name für Dienst, Systembenutzer, /opt/NAME, /var/lib/NAME, nginx-Site (Standard: $APP_NAME)
   --domain DOMAIN        Domain (Standard: $DOMAIN)
   --admin-email ADRESSE  ADMIN_EMAIL für die .env (Testmails aus dem Admin-Bereich)
   --certbot-email ADR.   E-Mail für Let's Encrypt
@@ -31,7 +31,7 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --name) NAME="$2"; shift 2 ;;
+    --name) APP_NAME="$2"; shift 2 ;;
     --domain) DOMAIN="$2"; shift 2 ;;
     --admin-email) ADMIN_EMAIL="$2"; shift 2 ;;
     --certbot-email) CERTBOT_EMAIL="$2"; shift 2 ;;
@@ -43,19 +43,21 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ "$NAME" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "--name: nur Kleinbuchstaben, Ziffern und Bindestrich." >&2; exit 1; }
-APP_USER="${NAME//-/}"
-APP_DIR="/opt/$NAME"
-DATA_DIR="/var/lib/$NAME"
+[[ "$APP_NAME" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "--name: nur Kleinbuchstaben, Ziffern und Bindestrich." >&2; exit 1; }
+APP_USER="${APP_NAME//-/}"
+APP_DIR="/opt/$APP_NAME"
+DATA_DIR="/var/lib/$APP_NAME"
 
 step() { printf '\n==> %s\n' "$*"; }
 [[ $EUID -eq 0 ]] || { echo "Bitte mit sudo ausführen." >&2; exit 1; }
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# In einer Subshell lesen: /etc/os-release setzt u. a. NAME und VERSION
 # shellcheck disable=SC1091
-. /etc/os-release
-if [[ "${ID:-}" != "ubuntu" || ! "${VERSION_ID:-}" =~ ^(24\.04|26\.04)$ ]]; then
-  echo "Hinweis: gedacht für Ubuntu 24.04/26.04, gefunden: ${PRETTY_NAME:-unbekannt}. Fahre trotzdem fort."
+OS_INFO="$(. /etc/os-release; echo "${ID:-} ${VERSION_ID:-} ${PRETTY_NAME:-unbekannt}")"
+read -r OS_ID OS_VERSION OS_PRETTY <<<"$OS_INFO"
+if [[ "$OS_ID" != "ubuntu" || ! "$OS_VERSION" =~ ^(24\.04|26\.04)$ ]]; then
+  echo "Hinweis: gedacht für Ubuntu 24.04/26.04, gefunden: $OS_PRETTY. Fahre trotzdem fort."
 fi
 
 step "Pakete"
@@ -117,15 +119,15 @@ chmod 640 "$ENV_FILE"
 step "systemd-Dienst und Sicherungs-Timer"
 render() {
   sed -e "s#@APP_DIR@#$APP_DIR#g" -e "s#@DATA_DIR@#$DATA_DIR#g" \
-      -e "s#@APP_USER@#$APP_USER#g" -e "s#@PORT@#$PORT#g" -e "s#@DOMAIN@#$DOMAIN#g" -e "s#@NAME@#$NAME#g" "$1"
+      -e "s#@APP_USER@#$APP_USER#g" -e "s#@PORT@#$PORT#g" -e "s#@DOMAIN@#$DOMAIN#g" -e "s#@NAME@#$APP_NAME#g" "$1"
 }
 for suffix in .service -backup.service -backup.timer; do
-  render "$APP_DIR/deploy/systemd/app$suffix" > "/etc/systemd/system/$NAME$suffix"
+  render "$APP_DIR/deploy/systemd/app$suffix" > "/etc/systemd/system/$APP_NAME$suffix"
 done
 systemctl daemon-reload
-systemctl enable --quiet "$NAME.service" "$NAME-backup.timer"
-systemctl restart "$NAME.service"
-systemctl start "$NAME-backup.timer"
+systemctl enable --quiet "$APP_NAME.service" "$APP_NAME-backup.timer"
+systemctl restart "$APP_NAME.service"
+systemctl start "$APP_NAME-backup.timer"
 
 printf 'Warte auf die App '
 for _ in $(seq 1 30); do
@@ -133,11 +135,11 @@ for _ in $(seq 1 30); do
   printf '.'; sleep 1
 done
 curl -fsS -o /dev/null "http://127.0.0.1:$PORT/robots.txt" || {
-  echo; echo "Die App antwortet nicht. Log: journalctl -u $NAME -n 50" >&2; exit 1; }
+  echo; echo "Die App antwortet nicht. Log: journalctl -u $APP_NAME -n 50" >&2; exit 1; }
 
 if (( WITH_NGINX )); then
   step "nginx mit Basic Auth für /admin"
-  HTPASSWD="/etc/nginx/$NAME.htpasswd"
+  HTPASSWD="/etc/nginx/$APP_NAME.htpasswd"
   if [[ ! -f "$HTPASSWD" ]]; then
     if [[ -n "${ADMIN_PASSWORD:-}" ]]; then
       htpasswd -bcB "$HTPASSWD" admin "$ADMIN_PASSWORD"
@@ -151,14 +153,14 @@ if (( WITH_NGINX )); then
   chown root:www-data "$HTPASSWD"
   chmod 640 "$HTPASSWD"
 
-  SITE="/etc/nginx/sites-available/$NAME"
+  SITE="/etc/nginx/sites-available/$APP_NAME"
   if [[ ! -f "$SITE" ]]; then
     render "$APP_DIR/deploy/nginx/site.conf" > "$SITE"
     echo "angelegt: $SITE"
   else
     echo "vorhanden, unverändert: $SITE"
   fi
-  ln -sf "$SITE" "/etc/nginx/sites-enabled/$NAME"
+  ln -sf "$SITE" "/etc/nginx/sites-enabled/$APP_NAME"
   nginx -t
   systemctl reload nginx
 
@@ -181,7 +183,7 @@ Website:      https://$DOMAIN/
 Admin:        https://$DOMAIN/admin   (Benutzer: admin)
 Konfiguration $ENV_FILE
 Daten:        $DATA_DIR   (Sicherungen täglich 02:30 nach $DATA_DIR/backup)
-Logs:         journalctl -u $NAME -f
+Logs:         journalctl -u $APP_NAME -f
 Update:       neue Version entpacken, dann erneut  sudo ./deploy/install.sh
 Nächster Schritt: im Admin-Bereich SMTP-Passwort eintragen und „Verbindung testen“.
 EOF
